@@ -2,6 +2,10 @@ package com.gss.demo.Services;
 
 import com.gss.demo.Entities.Currency;
 import com.gss.demo.Entities.Moneys;
+import com.gss.demo.Entities.Source;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -12,9 +16,14 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedReader;
 import java.io.IOException;
 
-import java.net.URL;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.*;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Barış Meral
@@ -46,15 +55,13 @@ public final class CurrencyFactory {
      *
      * @param money Enum com.github.barismeral.dovizAPI.Moneys
      */
-    public CurrencyFactory(Moneys money){
+    public CurrencyFactory(Moneys money, Source source) {
 
         this.money = money;
 
-        parse();
-
+        if (Objects.requireNonNull(source) == Source.MERKEZ_BANKASI) parse();
+        else stream();
     }
-
-
     /**
      *  set default money name
      * @param money Enum com.github.barismeral.dovizAPI.Moneys
@@ -118,8 +125,6 @@ public final class CurrencyFactory {
                 Element element = (Element) node;
 
                 currencyName = element.getElementsByTagName("CurrencyName").item(0).getTextContent();
-
-
                 // money index > 12 is forex
                 if (money.value>12){
 
@@ -130,16 +135,12 @@ public final class CurrencyFactory {
 
                 // money index < 12 is normal
                 else {
-
                     currencyBuyingPrice = Float.parseFloat(element.getElementsByTagName("BanknoteBuying").item(0).getTextContent());
                     currencySellingPrice = Float.parseFloat(element.getElementsByTagName("BanknoteSelling").item(0).getTextContent());
                     isForex =false;
                 }
 
-
             }
-
-
 
         }  //Exceptions
         catch (ParserConfigurationException e) {
@@ -148,6 +149,66 @@ public final class CurrencyFactory {
             e.printStackTrace();
         } catch (SAXException e) {
             e.printStackTrace();
+        }
+    }
+
+    public  void stream() {
+
+        HttpURLConnection uc;
+        URL url;
+        String urlString="https://finans.truncgil.com/v4/today.json";
+
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            uc = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        uc.addRequestProperty("http.agent", "Chrome");
+        uc.addRequestProperty(HttpHeaders.USER_AGENT, "Mozilla/5.0 Firefox/26.0");
+        try {
+            uc.setRequestMethod("GET");
+        } catch (ProtocolException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (InputStream input = uc.getInputStream()) {
+            InputStreamReader isr = new InputStreamReader(input);
+            BufferedReader reader = new BufferedReader(isr);
+            StringBuilder json = new StringBuilder();
+            int c;
+            while ((c = reader.read()) != -1) {
+                json.append((char) c);
+            }
+
+            JsonParser springParser = JsonParserFactory.getJsonParser();
+            Map< String, Object > map = springParser.parseMap(String.valueOf(json));
+
+            date = (String) map.get("Update_Date");
+
+            switch (money.value) {
+                case 0 -> {
+                    currencyName = "US DOLLAR";
+                    Map<String, Object> map2 = springParser.parseMap(String.valueOf((String) map.get("USD")));
+                    currencyBuyingPrice = (float) map.get("Buying");
+                    currencySellingPrice = (float) map.get("Selling");
+                }
+                case 3 -> {
+                    currencyName = "EURO";
+                    Map<String, Object> map2 = springParser.parseMap(String.valueOf((String) map.get("EUR")));
+                    currencyBuyingPrice = (float) map.get("Buying");
+                    currencySellingPrice = (float) map.get("Selling");
+                }
+            }
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }
