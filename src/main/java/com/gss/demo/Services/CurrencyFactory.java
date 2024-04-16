@@ -22,21 +22,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * @author Barış Meral
- * @since 12.15.2018
- * @version 1.0.1
- * <code>com.github.barismeral.dovizAPI.CurrencyFactory</code> class
- * <p>xml parser class</p>
- */
-
 
 @Service
-public final class CurrencyFactory {
-
+public class CurrencyFactory {
 
     private Moneys money;
     private String currencyName;
@@ -156,7 +149,7 @@ public final class CurrencyFactory {
 
         HttpURLConnection uc;
         URL url;
-        String urlString="https://finans.truncgil.com/v4/today.json";
+        String urlString="https://api.genelpara.com/embed/doviz.json";
 
         try {
             url = new URL(urlString);
@@ -189,24 +182,25 @@ public final class CurrencyFactory {
             JsonParser springParser = JsonParserFactory.getJsonParser();
             Map< String, Object > map = springParser.parseMap(String.valueOf(json));
 
-            date = (String) map.get("Update_Date");
+            //date = (String) map.get("Update_Date");
+            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+            Date date = new Date();
+            this.date = formatter.format(date);
 
             switch (money.value) {
                 case 0 -> {
                     currencyName = "US DOLLAR";
-                    Map<String, Object> map2 = springParser.parseMap(String.valueOf((String) map.get("USD")));
-                    currencyBuyingPrice = (float) map.get("Buying");
-                    currencySellingPrice = (float) map.get("Selling");
+                    Map<String, Object> map2 = (Map<String, Object>) map.get("USD");
+                    currencyBuyingPrice = Float.parseFloat(String.valueOf( map2.get("alis")));
+                    currencySellingPrice = Float.parseFloat(String.valueOf( map2.get("satis")));
                 }
                 case 3 -> {
                     currencyName = "EURO";
-                    Map<String, Object> map2 = springParser.parseMap(String.valueOf((String) map.get("EUR")));
-                    currencyBuyingPrice = (float) map.get("Buying");
-                    currencySellingPrice = (float) map.get("Selling");
+                    Map<String, Object> map2 =  (Map<String, Object>) map.get("EUR");
+                    currencyBuyingPrice = Float.parseFloat(String.valueOf( map2.get("alis")));
+                    currencySellingPrice = Float.parseFloat(String.valueOf( map2.get("satis")));
                 }
             }
-
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

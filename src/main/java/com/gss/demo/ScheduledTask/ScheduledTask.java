@@ -33,7 +33,7 @@ public class ScheduledTask {
         return new ResponseEntity<RateData>(rateData, HttpStatus.OK);
     }
 
-    //@Scheduled(cron = "0 0 * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public ResponseEntity<RateData> getCurrencyDollar() {
 
         currencyFactory = new CurrencyFactory(Moneys.US_DOLLAR, Source.MERKEZ_BANKASI);
@@ -45,7 +45,7 @@ public class ScheduledTask {
         return new ResponseEntity<RateData>(rateData, HttpStatus.OK);
     }
 
-    //@Scheduled(cron = "0 0 0 1 * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public ResponseEntity<RateData> getCurrencyEuroOther() {
 
         currencyFactory = new CurrencyFactory(Moneys.EURO, Source.OTHER);
@@ -58,7 +58,7 @@ public class ScheduledTask {
     }
 
 
-    @Scheduled(cron = "0 0 0 1 * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public ResponseEntity<RateData> getCurrencyDollarOther() {
 
         currencyFactory = new CurrencyFactory(Moneys.US_DOLLAR, Source.OTHER);
